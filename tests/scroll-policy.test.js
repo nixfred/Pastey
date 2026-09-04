@@ -40,9 +40,10 @@ const panel = fs.readFileSync(path.join(root, "Panel.qml"), "utf8")
 const handler = fs.readFileSync(path.join(root, "FastScrollHandler.qml"), "utf8")
 
 assert.equal((panel.match(/FastScrollHandler\s*\{/g) || []).length, 1)
-assert.match(handler, /MouseArea\s*\{/)
-assert.match(handler, /acceptedButtons:\s*Qt\.NoButton/)
+assert.equal((panel.match(/onWheel:\s*function\(wheel\)/g) || []).length, 1)
+assert.match(panel, /wheel\.accepted\s*=\s*fastScroll\.applyDeltas/)
+assert.doesNotMatch(handler, /MouseArea\s*\{/)
 assert.doesNotMatch(handler, /WheelHandler\s*\{/)
-assert.match(handler, /wheel\.accepted\s*=\s*root\.applyDeltas/)
+assert.match(handler, /QtObject\s*\{/)
 
 console.log("Pastey scroll policy tests passed")

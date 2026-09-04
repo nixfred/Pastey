@@ -343,6 +343,13 @@ Panel {
               cursorShape: Qt.PointingHandCursor
               onEntered: root.selectedIndex = row.index
               onClicked: root.restoreClipboard(row, true)
+              // The delegate MouseArea is the actual pointer event owner on
+              // this ListView. Route the wheel from here instead of placing a
+              // competing overlay above the Flickable.
+              onWheel: function(wheel) {
+                wheel.accepted = fastScroll.applyDeltas(
+                  wheel.pixelDelta.y, wheel.angleDelta.y)
+              }
             }
 
             Row {
@@ -464,12 +471,11 @@ Panel {
             }
           }
 
-          // A viewport overlay owns wheel/touchpad events before ListView's
-          // native path can swallow them. It preserves row clicks and drags,
-          // accelerates both delta forms once, and rejects boundary events so
-          // an enclosing surface can continue scrolling instead of trapping.
+          // One shared policy is invoked by whichever visible row owns the
+          // pointer. Keeping this controller non-visual avoids the failed
+          // overlay-versus-Flickable routing race.
           FastScrollHandler {
-            parent: resultList
+            id: fastScroll
             flickable: resultList
             speedMultiplier: 4.0
             mouseWheelStep: Math.max(1,

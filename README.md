@@ -21,6 +21,13 @@ available and sees the same 200-entry history.
 
 ## Install
 
+From the private GitHub repository (GitHub access required):
+
+```bash
+omarchy plugin add https://github.com/nixfred/Pastey.git --enable --yes
+omarchy bar move nixfred.pastey --section right
+```
+
 From a local checkout:
 
 ```bash

@@ -62,6 +62,21 @@ function filePaths(entry) {
   return paths
 }
 
+function isImagePath(path) {
+  return /\.(png|jpe?g|gif|webp|bmp|avif|tiff?|svg)$/i.test(String(path || ""))
+}
+
+// A row shows a picture when it IS a captured image, and also when it is a
+// single copied file that happens to be one — a file:// copy of a screenshot
+// is still a photo the user needs to recognise at a glance.
+function thumbnailPath(entry) {
+  var value = normalizeEntry(entry)
+  if (!value) return ""
+  if (value.type === "image") return value.path
+  var paths = filePaths(value)
+  return paths.length === 1 && isImagePath(paths[0]) ? paths[0] : ""
+}
+
 function basename(path) {
   var parts = String(path || "").split("/")
   return parts.length ? parts[parts.length - 1] : ""
@@ -115,7 +130,7 @@ function displayRows(history, query, limit) {
       category: kind,
       previewText: preview(entry),
       detailText: kind.charAt(0).toUpperCase() + kind.slice(1),
-      previewImage: entry.type === "image" ? entry.path : ""
+      previewImage: thumbnailPath(entry)
     })
   }
 
@@ -136,6 +151,8 @@ if (typeof module !== "undefined") {
     parseEntries: parseEntries,
     decodeFileUri: decodeFileUri,
     filePaths: filePaths,
+    isImagePath: isImagePath,
+    thumbnailPath: thumbnailPath,
     category: category,
     preview: preview,
     searchableText: searchableText,

@@ -15,6 +15,21 @@ assert.equal(model.category(image), "image")
 assert.equal(model.preview(files), "2 files")
 assert.equal(model.preview(image), "Image · Today 09:00")
 
+const photoFile = { type: "text", text: "file:///tmp/holiday.JPG" }
+const twoPhotos = { type: "text", text: "file:///tmp/a.png\nfile:///tmp/b.png" }
+assert.equal(model.thumbnailPath(image), "/tmp/sample.png")
+assert.equal(model.thumbnailPath(photoFile), "/tmp/holiday.JPG")
+assert.equal(model.thumbnailPath(files), "")
+assert.equal(model.thumbnailPath(twoPhotos), "")
+assert.equal(model.thumbnailPath(text), "")
+assert.equal(model.isImagePath("/tmp/a.webp"), true)
+assert.equal(model.isImagePath("/tmp/a.txt"), false)
+
+const rows = model.displayRows([image, photoFile, text], "", 200)
+assert.equal(rows[0].previewImage, "/tmp/sample.png")
+assert.equal(rows[1].previewImage, "/tmp/holiday.JPG")
+assert.equal(rows[2].previewImage, "")
+
 const history = [text, link, code, files, image]
 assert.equal(model.displayRows(history, "", 200).length, 5)
 assert.equal(model.displayRows(history, "hello", 200).length, 2)

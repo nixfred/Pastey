@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
@@ -358,29 +359,77 @@ Panel {
               anchors.rightMargin: Style.space(7)
               spacing: Style.space(9)
 
-              BorderSurface {
+              // A picture row shows the picture. Anything else keeps the round
+              // category glyph, so the list still reads as one column of
+              // equal-weight badges.
+              Item {
+                id: badge
                 anchors.verticalCenter: parent.verticalCenter
-                width: Style.space(34)
-                height: width
-                radius: width / 2
-                color: Style.selectedFillFor(root.foreground, Color.accent)
-                borderSpec: Border.none()
+                readonly property bool showsThumbnail: row.previewImage !== ""
+                  && thumbnail.status !== Image.Error
+                width: showsThumbnail ? Style.space(48) : Style.space(34)
+                height: showsThumbnail ? Style.space(40) : Style.space(34)
 
-                Text {
-                  anchors.centerIn: parent
-                  text: row.category === "image" ? "󰋩"
-                    : row.category === "file" ? "󰈔"
-                    : row.category === "link" ? "󰌷"
-                    : row.category === "code" ? "󰅩" : "󰦨"
-                  color: root.foreground
-                  font.family: root.fontFamily
-                  font.pixelSize: Style.font.icon
+                BorderSurface {
+                  anchors.fill: parent
+                  visible: !badge.showsThumbnail
+                  radius: width / 2
+                  color: Style.selectedFillFor(root.foreground, Color.accent)
+                  borderSpec: Border.none()
+
+                  Text {
+                    anchors.centerIn: parent
+                    text: row.category === "image" ? "󰋩"
+                      : row.category === "file" ? "󰈔"
+                      : row.category === "link" ? "󰌷"
+                      : row.category === "code" ? "󰅩" : "󰦨"
+                    color: root.foreground
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.icon
+                  }
+                }
+
+                Image {
+                  id: thumbnail
+                  anchors.fill: parent
+                  visible: badge.showsThumbnail
+                  source: row.previewImage !== "" ? "file://" + row.previewImage : ""
+                  // Screenshots are full-screen PNGs. Decoding them at their
+                  // native size for a 48px badge is what would make a 200-row
+                  // list crawl, so the loader is capped and kept off the UI
+                  // thread.
+                  sourceSize.width: 160
+                  sourceSize.height: 160
+                  asynchronous: true
+                  cache: true
+                  fillMode: Image.PreserveAspectCrop
+                  smooth: true
+                  // An Item clips to its bounding box and ignores radius, so
+                  // the rounded corner has to come from a mask.
+                  layer.enabled: true
+                  layer.effect: MultiEffect {
+                    maskEnabled: true
+                    maskSource: thumbnailMask
+                    maskThresholdMin: 0.5
+                    maskSpreadAtMin: 1.0
+                  }
+                }
+
+                // The shape, never drawn itself: MultiEffect reads its alpha.
+                Rectangle {
+                  id: thumbnailMask
+                  anchors.fill: parent
+                  radius: Style.space(7)
+                  color: "black"
+                  visible: false
+                  layer.enabled: true
+                  layer.smooth: true
                 }
               }
 
               Column {
                 anchors.verticalCenter: parent.verticalCenter
-                width: parent.width - Style.space(34) - removeButton.width - parent.spacing * 2
+                width: parent.width - badge.width - removeButton.width - parent.spacing * 2
                 spacing: Style.space(1)
 
                 Text {

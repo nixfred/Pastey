@@ -9,6 +9,8 @@ anchored directly to its bar icon.
 
 - Keeps the newest 200 Omarchy clipboard entries
 - Shows five rows at a time and fast-scrolls through the full history
+- Shows a real thumbnail for copied pictures — captured images and single copied
+  image files — so a screenshot is recognisable without opening it
 - Searches all retained text, file paths, and image metadata as you type
 - Restores an item to the clipboard on click or Enter; it never types into an app
 - Copies the latest visible item with a right-click on the bar icon

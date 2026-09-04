@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "nixfred.pastey",
+  "name": "Pastey",
+  "version": "1.0.0",
+  "author": "Fred Nix",
+  "license": "MIT",
+  "description": "A compact, searchable 200-item clipboard history for the Omarchy bar.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "Pastey",
+    "description": "Search and paste the latest 200 clipboard items from a five-row popup.",
+    "category": "Productivity",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

@@ -1,0 +1,145 @@
+function normalizeEntry(value) {
+  if (typeof value === "string")
+    return value.trim() ? { type: "text", text: value } : null
+  if (!value || typeof value !== "object") return null
+
+  var type = String(value.type || value.kind || "")
+  if (type === "text") {
+    var text = String(value.text || "")
+    return text.trim() ? { type: "text", text: text } : null
+  }
+
+  if (type === "image") {
+    var path = String(value.path || "")
+    if (!path) return null
+    var image = {
+      type: "image",
+      path: path,
+      mime: String(value.mime || "image/png")
+    }
+    if (value.capturedAt !== undefined && value.capturedAt !== null)
+      image.capturedAt = String(value.capturedAt)
+    return image
+  }
+
+  return null
+}
+
+function parseEntries(raw, limit) {
+  var maximum = limit === undefined ? 200 : Math.max(0, Number(limit) || 0)
+  try {
+    var values = JSON.parse(String(raw || "[]"))
+    if (!Array.isArray(values)) return []
+    var result = []
+    for (var i = 0; i < values.length && result.length < maximum; i++) {
+      var entry = normalizeEntry(values[i])
+      if (entry) result.push(entry)
+    }
+    return result
+  } catch (e) {
+    return []
+  }
+}
+
+function decodeFileUri(uri) {
+  var value = String(uri || "").trim()
+  if (value.indexOf("file://") !== 0) return ""
+  var path = value.substring(7)
+  if (path.indexOf("localhost/") === 0) path = path.substring(9)
+  if (path.charAt(0) !== "/") return ""
+  try { return decodeURIComponent(path) } catch (e) { return path }
+}
+
+function filePaths(entry) {
+  var value = normalizeEntry(entry)
+  if (!value || value.type !== "text") return []
+  var lines = value.text.split(/\r?\n/)
+  var paths = []
+  for (var i = 0; i < lines.length; i++) {
+    var path = decodeFileUri(lines[i])
+    if (path) paths.push(path)
+  }
+  return paths
+}
+
+function basename(path) {
+  var parts = String(path || "").split("/")
+  return parts.length ? parts[parts.length - 1] : ""
+}
+
+function category(entry) {
+  var value = normalizeEntry(entry)
+  if (!value) return "text"
+  if (value.type === "image") return "image"
+  if (filePaths(value).length > 0) return "file"
+  if (/^https?:\/\/\S+$/i.test(value.text.trim())) return "link"
+  if (/[\n\r]/.test(value.text)
+      && /[{}();=<>]|\b(function|class|const|let|def|import)\b/.test(value.text)) return "code"
+  return "text"
+}
+
+function preview(entry) {
+  var value = normalizeEntry(entry)
+  if (!value) return ""
+  if (value.type === "image")
+    return value.capturedAt ? "Image · " + value.capturedAt : "Image"
+
+  var paths = filePaths(value)
+  if (paths.length === 1) return basename(paths[0])
+  if (paths.length > 1) return paths.length + " files"
+  return value.text.slice(0, 8192).replace(/\s+/g, " ").trim().slice(0, 500)
+}
+
+function searchableText(entry) {
+  var value = normalizeEntry(entry)
+  if (!value) return ""
+  if (value.type === "image")
+    return ["image", "screenshot", value.mime, value.path, value.capturedAt || ""].join(" ")
+  return value.text.slice(0, 8192) + " " + filePaths(value).join(" ")
+}
+
+function displayRows(history, query, limit) {
+  var values = Array.isArray(history) ? history : []
+  var needle = String(query || "").trim().toLowerCase()
+  var maximum = limit === undefined ? 200 : Math.max(0, Number(limit) || 0)
+  var rows = []
+
+  for (var i = 0; i < values.length && rows.length < maximum; i++) {
+    var entry = normalizeEntry(values[i])
+    if (!entry) continue
+    if (needle && searchableText(entry).toLowerCase().indexOf(needle) < 0) continue
+    var kind = category(entry)
+    rows.push({
+      historyIndex: i,
+      entryType: entry.type,
+      category: kind,
+      previewText: preview(entry),
+      detailText: kind.charAt(0).toUpperCase() + kind.slice(1),
+      previewImage: entry.type === "image" ? entry.path : ""
+    })
+  }
+
+  return rows
+}
+
+function removeAt(history, index, limit) {
+  var values = Array.isArray(history) ? history.slice() : []
+  var target = Number(index)
+  if (isFinite(target) && target >= 0 && target < values.length) values.splice(target, 1)
+  var maximum = limit === undefined ? 200 : Math.max(0, Number(limit) || 0)
+  return values.slice(0, maximum)
+}
+
+if (typeof module !== "undefined") {
+  module.exports = {
+    normalizeEntry: normalizeEntry,
+    parseEntries: parseEntries,
+    decodeFileUri: decodeFileUri,
+    filePaths: filePaths,
+    category: category,
+    preview: preview,
+    searchableText: searchableText,
+    displayRows: displayRows,
+    removeAt: removeAt
+  }
+}

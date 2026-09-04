@@ -1,0 +1,36 @@
+#!/bin/bash
+
+set -euo pipefail
+
+action=${1:-}
+index=${2:-}
+history_file="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/clipboard-history.json"
+
+case "$action" in
+  copy|paste) ;;
+  *) exit 2 ;;
+esac
+
+[[ $index =~ ^[0-9]+$ ]] || exit 2
+[[ -r $history_file ]] || exit 1
+
+entry_type=$(jq -er --argjson index "$index" '.[$index].type' "$history_file")
+
+case "$entry_type" in
+  text)
+    jq -er --argjson index "$index" '.[$index].text | type == "string"' "$history_file" >/dev/null
+    jq -jr --argjson index "$index" '.[$index].text' "$history_file" | wl-copy
+    ;;
+  image)
+    mime=$(jq -er --argjson index "$index" '.[$index].mime // "image/png"' "$history_file")
+    path=$(jq -er --argjson index "$index" '.[$index].path' "$history_file")
+    [[ -r $path ]] || exit 1
+    wl-copy --type "$mime" < "$path"
+    ;;
+  *) exit 2 ;;
+esac
+
+if [[ $action == paste ]]; then
+  sleep 0.15
+  wtype -M shift -k Insert -m shift 2>/dev/null || true
+fi

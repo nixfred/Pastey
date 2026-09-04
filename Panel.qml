@@ -28,7 +28,6 @@ Panel {
   property string query: ""
   property int selectedIndex: 0
   property string actionStatus: ""
-  property bool writingCap: false
 
   ListModel { id: displayModel }
 
@@ -56,10 +55,8 @@ Panel {
     // The stock recorder intentionally keeps a larger general-purpose history.
     // Pastey owns the user's tighter contract and trims it whenever a capture
     // pushes the shared file past 200 entries.
-    if (sourceCount > historyLimit && !writingCap) {
-      writingCap = true
+    if (sourceCount > historyLimit) {
       historyFile.setText(JSON.stringify(history, null, 2) + "\n")
-      capRelease.restart()
     }
   }
 
@@ -93,9 +90,7 @@ Panel {
     var target = row || selectedRow()
     if (!target) return
     history = Model.removeAt(history, target.historyIndex, historyLimit)
-    writingCap = true
     historyFile.setText(JSON.stringify(history, null, 2) + "\n")
-    capRelease.restart()
     actionStatus = "Removed"
     statusTimer.restart()
     rebuild()
@@ -121,13 +116,6 @@ Panel {
     onLoaded: root.loadHistory(text())
     onLoadFailed: { root.history = []; root.rebuild() }
     onFileChanged: reload()
-  }
-
-  Timer {
-    id: capRelease
-    interval: 250
-    repeat: false
-    onTriggered: root.writingCap = false
   }
 
   Process {

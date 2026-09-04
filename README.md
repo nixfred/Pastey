@@ -8,10 +8,10 @@ anchored directly to its bar icon.
 ## What it does
 
 - Keeps the newest 200 Omarchy clipboard entries
-- Shows five rows at a time and scrolls through the full history
+- Shows five rows at a time and fast-scrolls through the full history
 - Searches all retained text, file paths, and image metadata as you type
-- Pastes an item on click or Enter
-- Copies an item with Shift+Enter or a right-click on the bar icon
+- Restores an item to the clipboard on click or Enter; it never types into an app
+- Copies the latest visible item with a right-click on the bar icon
 - Removes every visible item with its × button or the Delete key
 - Uses a paperclip icon and defaults to the right side of the bar
 
@@ -32,18 +32,20 @@ omarchy bar move nixfred.pastey --section right
 
 - Type to search; Backspace edits and Escape clears
 - Up/Down and Page Up/Page Down move through results
-- Enter pastes; Shift+Enter copies
+- Enter restores the selected item to the clipboard and closes Pastey
 - Delete removes the selected item
 - Escape closes when search is empty
 
 ## Requirements
 
 Pastey targets Omarchy 4 and uses the clipboard tooling Omarchy already ships:
-`jq`, `wl-copy`, and `wtype`.
+`jq` and `wl-copy`.
 
 ## Test
 
 ```bash
 node tests/model.test.js
+node tests/scroll-policy.test.js
+bash tests/action.test.sh
 omarchy plugin validate .
 ```

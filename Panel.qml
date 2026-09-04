@@ -77,12 +77,11 @@ Panel {
     rebuild()
   }
 
-  function act(action, row) {
+  function restoreClipboard(row, closeAfter) {
     var target = row || selectedRow()
     if (!target || actionProc.running) return
-    if (action === "paste") root.close()
-    actionProc.actionName = action
-    actionProc.command = [pluginDir + "/pastey-action", action, String(target.historyIndex)]
+    if (closeAfter !== false) root.close()
+    actionProc.command = [pluginDir + "/pastey-action", String(target.historyIndex)]
     actionProc.running = true
   }
 
@@ -120,12 +119,9 @@ Panel {
 
   Process {
     id: actionProc
-    property string actionName: ""
     onExited: function(code) {
-      if (actionName === "copy") {
-        root.actionStatus = code === 0 ? "Copied" : "Copy failed"
-        statusTimer.restart()
-      }
+      root.actionStatus = code === 0 ? "Copied" : "Copy failed"
+      statusTimer.restart()
     }
   }
 
@@ -143,7 +139,7 @@ Panel {
     text: ""
     tooltipText: "Pastey · " + root.history.length + " of 200 clips"
     onPressed: function(code) {
-      if (code === Qt.RightButton && displayModel.count > 0) root.act("copy")
+      if (code === Qt.RightButton && displayModel.count > 0) root.restoreClipboard(null, false)
       else root.toggle()
     }
   }
@@ -185,7 +181,7 @@ Panel {
           if (displayModel.count > 0) resultList.positionViewAtEnd()
           event.accepted = true
         } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-          root.act((event.modifiers & Qt.ShiftModifier) ? "copy" : "paste")
+          root.restoreClipboard(null, true)
           event.accepted = true
         } else if (event.key === Qt.Key_Delete) {
           root.removeRow(); event.accepted = true
@@ -346,7 +342,7 @@ Panel {
               hoverEnabled: true
               cursorShape: Qt.PointingHandCursor
               onEntered: root.selectedIndex = row.index
-              onClicked: root.act("paste", row)
+              onClicked: root.restoreClipboard(row, true)
             }
 
             Row {
@@ -467,6 +463,19 @@ Panel {
               horizontalAlignment: Text.AlignHCenter
             }
           }
+
+          // A viewport overlay owns wheel/touchpad events before ListView's
+          // native path can swallow them. It preserves row clicks and drags,
+          // accelerates both delta forms once, and rejects boundary events so
+          // an enclosing surface can continue scrolling instead of trapping.
+          FastScrollHandler {
+            parent: resultList
+            flickable: resultList
+            speedMultiplier: 4.0
+            mouseWheelStep: Math.max(1,
+              (Number(Application.styleHints.wheelScrollLines) || 3)
+                * Math.max(1, Style.font.body))
+          }
         }
 
         PanelSeparator { foreground: root.foreground }
@@ -475,7 +484,7 @@ Panel {
           width: parent.width
           text: root.actionStatus !== ""
             ? root.actionStatus
-            : "Enter paste · Shift+Enter copy · Delete remove"
+            : "Click or Enter restores clipboard · Delete remove"
           color: root.actionStatus === "Copy failed" ? root.urgent : root.dim
           font.family: root.fontFamily
           font.pixelSize: Style.font.caption

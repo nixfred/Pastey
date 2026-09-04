@@ -2,14 +2,8 @@
 
 set -euo pipefail
 
-action=${1:-}
-index=${2:-}
+index=${1:-}
 history_file="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/clipboard-history.json"
-
-case "$action" in
-  copy|paste) ;;
-  *) exit 2 ;;
-esac
 
 [[ $index =~ ^[0-9]+$ ]] || exit 2
 [[ -r $history_file ]] || exit 1
@@ -29,8 +23,3 @@ case "$entry_type" in
     ;;
   *) exit 2 ;;
 esac
-
-if [[ $action == paste ]]; then
-  sleep 0.15
-  wtype -M shift -k Insert -m shift 2>/dev/null || true
-fi

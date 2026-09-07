@@ -30,6 +30,31 @@ assert.equal(rows[0].previewImage, "/tmp/sample.png")
 assert.equal(rows[1].previewImage, "/tmp/holiday.JPG")
 assert.equal(rows[2].previewImage, "")
 
+assert.equal(model.isPicture(image), true)
+assert.equal(model.isPicture(photoFile), true)
+assert.equal(model.isPicture(twoPhotos), true)   // no single thumbnail, still a photo clip
+assert.equal(model.isPicture(files), false)
+assert.equal(model.isPicture(text), false)
+
+assert.equal(model.normalizeFilter("nonsense"), "all")
+assert.equal(model.normalizeFilter(""), "all")
+assert.equal(model.nextFilter("all", 1), "text")
+assert.equal(model.nextFilter("image", 1), "all")
+assert.equal(model.nextFilter("all", -1), "image")
+assert.equal(model.nextFilter("bogus", 1), "text")
+
+const mixed = [image, text, photoFile, link, files]
+assert.equal(model.displayRows(mixed, "", 200, "all").length, 5)
+assert.deepEqual(
+  model.displayRows(mixed, "", 200, "image").map(r => r.historyIndex), [0, 2])
+assert.deepEqual(
+  model.displayRows(mixed, "", 200, "text").map(r => r.historyIndex), [1, 3, 4])
+// An unknown filter shows everything rather than emptying the panel.
+assert.equal(model.displayRows(mixed, "", 200, "bogus").length, 5)
+// Filter and query compose: both must match.
+assert.equal(model.displayRows(mixed, "holiday", 200, "image").length, 1)
+assert.equal(model.displayRows(mixed, "holiday", 200, "text").length, 0)
+
 const history = [text, link, code, files, image]
 assert.equal(model.displayRows(history, "", 200).length, 5)
 assert.equal(model.displayRows(history, "hello", 200).length, 2)

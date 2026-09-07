@@ -27,13 +27,14 @@ Panel {
 
   property var history: []
   property string query: ""
+  property string filter: "all"
   property int selectedIndex: 0
   property string actionStatus: ""
 
   ListModel { id: displayModel }
 
   function rebuild() {
-    var rows = Model.displayRows(history, query, historyLimit)
+    var rows = Model.displayRows(history, query, historyLimit, filter)
     displayModel.clear()
     for (var i = 0; i < rows.length; i++) displayModel.append(rows[i])
 
@@ -76,6 +77,28 @@ Panel {
     query = String(value || "")
     selectedIndex = 0
     rebuild()
+  }
+
+  function setFilter(value) {
+    var next = Model.normalizeFilter(value)
+    if (next === filter) return
+    filter = next
+    selectedIndex = 0
+    rebuild()
+  }
+
+  function cycleFilter(delta) {
+    setFilter(Model.nextFilter(filter, delta))
+  }
+
+  // Names the mode the user is in, so the hero count and the empty state
+  // don't each re-derive it. Counting is against the filtered view, never
+  // against the whole history — "2 of 5 pictures" would be a lie when the 5
+  // is the total clip count.
+  function filterNoun(count) {
+    if (filter === "image") return count === 1 ? "picture" : "pictures"
+    if (filter === "text") return count === 1 ? "text clip" : "text clips"
+    return count === 1 ? "clip" : "clips"
   }
 
   function restoreClipboard(row, closeAfter) {
@@ -169,6 +192,10 @@ Panel {
           root.select(-1); event.accepted = true
         } else if (event.key === Qt.Key_Down) {
           root.select(1); event.accepted = true
+        } else if (event.key === Qt.Key_Left) {
+          root.cycleFilter(-1); event.accepted = true
+        } else if (event.key === Qt.Key_Right) {
+          root.cycleFilter(1); event.accepted = true
         } else if (event.key === Qt.Key_PageUp) {
           root.select(-root.visibleRowCount); event.accepted = true
         } else if (event.key === Qt.Key_PageDown) {
@@ -248,7 +275,9 @@ Panel {
               width: parent.width
               text: (root.query !== ""
                 ? displayModel.count + (displayModel.count === 1 ? " MATCH" : " MATCHES")
-                : root.history.length + " OF 200 CLIPS").toUpperCase()
+                : root.filter !== "all"
+                  ? displayModel.count + " " + root.filterNoun(displayModel.count)
+                  : root.history.length + " OF 200 CLIPS").toUpperCase()
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
@@ -300,8 +329,37 @@ Panel {
           }
         }
 
+        // Text / photos / both. A mode, not a search: it survives Escape
+        // and stays put while the query is edited, so a user hunting for a
+        // screenshot never has to re-pick it between searches.
+        ButtonGroup {
+          // No tooltips: the labels already say it, and the kit floats a
+          // tooltip upward, straight over the search field.
+          options: [
+            { value: "all", label: "Both" },
+            { value: "text", label: "Text" },
+            { value: "image", label: "Photos" }
+          ]
+          value: root.filter
+          // The row list owns the panel cursor; the chips must not paint a
+          // second highlight, so the external cursor stays disabled and the
+          // group stays out of the Tab chain Tab uses to switch panels.
+          focusable: false
+          cursorIndex: -1
+          foreground: root.foreground
+          accent: Color.accent
+          fontFamily: root.fontFamily
+          fontSize: Style.font.caption
+          onChanged: function(value) {
+            root.setFilter(value)
+            keyCatcher.forceActiveFocus()
+          }
+        }
+
         PanelSectionHeader {
-          text: root.query !== "" ? "SEARCH RESULTS" : "LATEST FIVE"
+          text: root.query !== "" ? "SEARCH RESULTS"
+            : root.filter === "image" ? "PICTURES"
+            : root.filter === "text" ? "TEXT CLIPS" : "LATEST FIVE"
           foreground: root.foreground
           fontFamily: root.fontFamily
         }
@@ -512,7 +570,9 @@ Panel {
 
             Text {
               width: parent.width
-              text: root.query !== "" ? "No matching clips" : "Clipboard is empty"
+              text: root.query !== "" ? "No matching clips"
+                : root.filter !== "all" ? "No " + root.filterNoun(0) + " yet"
+                : "Clipboard is empty"
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.bodySmall
@@ -539,7 +599,7 @@ Panel {
           width: parent.width
           text: root.actionStatus !== ""
             ? root.actionStatus
-            : "Click or Enter restores clipboard · Delete remove"
+            : "Enter restores · Delete removes · ←/→ filter"
           color: root.actionStatus === "Copy failed" ? root.urgent : root.dim
           font.family: root.fontFamily
           font.pixelSize: Style.font.caption

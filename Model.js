@@ -77,6 +77,43 @@ function thumbnailPath(entry) {
   return paths.length === 1 && isImagePath(paths[0]) ? paths[0] : ""
 }
 
+// Whether a row is a picture for the purposes of the text/photos toggle.
+// Broader than thumbnailPath on purpose: a copy of two screenshots has no
+// single thumbnail to show, but it is still a photo clip and belongs under
+// "Photos" rather than under "Text".
+function isPicture(entry) {
+  var value = normalizeEntry(entry)
+  if (!value) return false
+  if (value.type === "image") return true
+  var paths = filePaths(value)
+  if (paths.length === 0) return false
+  for (var i = 0; i < paths.length; i++)
+    if (!isImagePath(paths[i])) return false
+  return true
+}
+
+var FILTERS = ["all", "text", "image"]
+
+function normalizeFilter(filter) {
+  var mode = String(filter || "all")
+  return FILTERS.indexOf(mode) >= 0 ? mode : "all"
+}
+
+function matchesFilter(entry, filter) {
+  var mode = normalizeFilter(filter)
+  if (mode === "all") return true
+  return mode === "image" ? isPicture(entry) : !isPicture(entry)
+}
+
+// Cycle through the toggle in either direction, wrapping at both ends so
+// Left from "all" lands on "image" rather than dead-ending.
+function nextFilter(filter, delta) {
+  var index = FILTERS.indexOf(normalizeFilter(filter))
+  var step = Number(delta) || 0
+  var count = FILTERS.length
+  return FILTERS[((index + step) % count + count) % count]
+}
+
 function basename(path) {
   var parts = String(path || "").split("/")
   return parts.length ? parts[parts.length - 1] : ""
@@ -113,15 +150,17 @@ function searchableText(entry) {
   return value.text.slice(0, 8192) + " " + filePaths(value).join(" ")
 }
 
-function displayRows(history, query, limit) {
+function displayRows(history, query, limit, filter) {
   var values = Array.isArray(history) ? history : []
   var needle = String(query || "").trim().toLowerCase()
   var maximum = limit === undefined ? 200 : Math.max(0, Number(limit) || 0)
+  var mode = normalizeFilter(filter)
   var rows = []
 
   for (var i = 0; i < values.length && rows.length < maximum; i++) {
     var entry = normalizeEntry(values[i])
     if (!entry) continue
+    if (!matchesFilter(entry, mode)) continue
     if (needle && searchableText(entry).toLowerCase().indexOf(needle) < 0) continue
     var kind = category(entry)
     rows.push({
@@ -153,6 +192,11 @@ if (typeof module !== "undefined") {
     filePaths: filePaths,
     isImagePath: isImagePath,
     thumbnailPath: thumbnailPath,
+    isPicture: isPicture,
+    filters: FILTERS,
+    normalizeFilter: normalizeFilter,
+    matchesFilter: matchesFilter,
+    nextFilter: nextFilter,
     category: category,
     preview: preview,
     searchableText: searchableText,

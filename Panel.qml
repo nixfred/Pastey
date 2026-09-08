@@ -25,6 +25,20 @@ Panel {
   readonly property color urgent: bar ? bar.urgent : Color.urgent
   readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
 
+  // Identity for the About line. The manifest is the single source of truth
+  // for all three, so bumping a version or moving the repo is one edit there.
+  // The constants are the fallback for when the registry is not reachable.
+  readonly property var pluginManifest: {
+    var reg = bar && bar.shell ? bar.shell.pluginRegistry : null
+    return reg && reg.installedPlugins ? (reg.installedPlugins[root.moduleName] || null) : null
+  }
+  readonly property string pluginVersion: pluginManifest && pluginManifest.version
+    ? String(pluginManifest.version) : ""
+  readonly property string repoUrl: pluginManifest && pluginManifest.repository
+    ? String(pluginManifest.repository) : "https://github.com/nixfred/Pastey"
+  readonly property string homeUrl: pluginManifest && pluginManifest.homepage
+    ? String(pluginManifest.homepage) : "https://nixfred.com"
+
   property var history: []
   property string query: ""
   property string filter: "all"
@@ -117,6 +131,39 @@ Panel {
     actionStatus = "Removed"
     statusTimer.restart()
     rebuild()
+  }
+
+  component Caption: Text {
+    textFormat: Text.PlainText
+    color: root.dim
+    font.family: root.fontFamily
+    font.pixelSize: Style.font.caption
+  }
+
+  // A caption that opens a URL. xdg-open is detached so a slow browser start
+  // never blocks the shell, and the panel closes so the page is not opened
+  // behind a popup the click also dismissed.
+  component Link: Text {
+    id: linkText
+    property string url: ""
+    textFormat: Text.PlainText
+    color: linkArea.containsMouse ? root.foreground : root.dim
+    font.family: root.fontFamily
+    font.pixelSize: Style.font.caption
+    font.underline: linkArea.containsMouse
+    elide: Text.ElideRight
+
+    MouseArea {
+      id: linkArea
+      anchors.fill: parent
+      hoverEnabled: true
+      cursorShape: Qt.PointingHandCursor
+      onClicked: {
+        if (linkText.url === "") return
+        root.close()
+        Quickshell.execDetached(["xdg-open", linkText.url])
+      }
+    }
   }
 
   implicitWidth: button.implicitWidth
@@ -604,6 +651,30 @@ Panel {
           font.family: root.fontFamily
           font.pixelSize: Style.font.caption
           elide: Text.ElideRight
+        }
+
+        // About: version, source, site. At the foot of the panel and in the
+        // dim caption colour, so it never competes with the list — but always
+        // present, because you should never have to open a file to learn
+        // which Pastey you are looking at. A Flow, not a Row: the panel is
+        // narrow enough that a long repo path has to be allowed to wrap.
+        Flow {
+          width: parent.width
+          spacing: Style.space(5)
+
+          Caption { text: "Pastey" + (root.pluginVersion !== "" ? " v" + root.pluginVersion : "") }
+          Caption { text: "·"; visible: root.repoUrl !== "" }
+          Link {
+            visible: root.repoUrl !== ""
+            text: root.repoUrl.replace(/^https?:\/\//, "")
+            url: root.repoUrl
+          }
+          Caption { text: "·"; visible: root.homeUrl !== "" }
+          Link {
+            visible: root.homeUrl !== ""
+            text: root.homeUrl.replace(/^https?:\/\//, "")
+            url: root.homeUrl
+          }
         }
       }
     }

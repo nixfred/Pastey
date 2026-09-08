@@ -266,6 +266,14 @@ Panel {
         } else if (Util.editsFilter(event, root.query)) {
           root.setQuery(Util.editedFilter(event, root.query))
           event.accepted = true
+        } else if (event.text && event.text.length === 1
+          && event.text.charCodeAt(0) >= 32 && event.text.charCodeAt(0) !== 127) {
+          // Typing. Must stay the last branch, so every named key above wins
+          // first — Space would otherwise never reach the list. A Ctrl or Alt
+          // chord arrives as its control character (Ctrl+U is \x15), which the
+          // >= 32 test drops, so shortcuts never leak into the query.
+          root.setQuery(root.query + event.text)
+          event.accepted = true
         }
       }
 

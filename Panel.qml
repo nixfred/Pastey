@@ -133,6 +133,87 @@ Panel {
     rebuild()
   }
 
+  // The hover preview for a row. PanelToolTip is a single unwrapped line by
+  // design — right for "Remove", useless for a clip that is a forty-line diff
+  // — so this keeps the same theme tokens but lays its content out as a
+  // wrapped block, with the picture itself on top when the clip is one.
+  component ClipPreview: ToolTip {
+    id: preview
+    property string body: ""
+    property string image: ""
+    readonly property int maxWidth: Style.space(440)
+    readonly property int pad: Style.space(10)
+
+    delay: 320
+    padding: 0
+    // Popup only keeps itself inside the window when margins are >= 0; the
+    // default of -1 lets it hang off the screen edge instead.
+    margins: Style.space(8)
+    // The panel hugs the right edge of the screen, so the preview opens to
+    // the left of the row rather than over the list it is describing.
+    x: -width - Style.space(12)
+    y: (parent ? (parent.height - height) / 2 : 0)
+
+    background: BorderSurface {
+      color: Color.tooltip.background
+      borderSpec: Border.localOrSurfaceSpec("tooltip", "border",
+        Color.tooltip.border, Color.tooltip.border, Style.normalBorderWidth)
+      radius: Style.cornerRadius
+    }
+
+    contentItem: Item {
+      implicitWidth: previewColumn.implicitWidth + preview.pad * 2
+      implicitHeight: previewColumn.implicitHeight + preview.pad * 2
+
+      Column {
+        id: previewColumn
+        x: preview.pad
+        y: preview.pad
+        spacing: Style.space(8)
+
+        // Both source dimensions are set, so Qt scales the decode to fit
+        // inside that box with the aspect ratio kept — implicitWidth and
+        // implicitHeight then already carry the size we want to paint.
+        Image {
+          id: previewImage
+          visible: preview.image !== "" && status === Image.Ready
+          source: preview.image !== "" ? "file://" + preview.image : ""
+          sourceSize.width: preview.maxWidth
+          sourceSize.height: Style.space(300)
+          fillMode: Image.PreserveAspectFit
+          asynchronous: true
+          cache: true
+          smooth: true
+        }
+
+        Text {
+          id: previewBody
+          visible: preview.body !== ""
+          // TextMetrics measures the text unwrapped, which is what decides
+          // whether this needs the full width. Reading implicitWidth here
+          // instead would bind the width to itself.
+          width: Math.min(Math.ceil(previewMetrics.boundingRect.width) + Style.space(2),
+            preview.maxWidth)
+          text: preview.body
+          textFormat: Text.PlainText
+          wrapMode: Text.Wrap
+          // A clip capped at 4000 characters can still be 4000 lines long.
+          maximumLineCount: 20
+          elide: Text.ElideRight
+          color: Color.tooltip.text
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.bodySmall
+        }
+
+        TextMetrics {
+          id: previewMetrics
+          font: previewBody.font
+          text: preview.body
+        }
+      }
+    }
+  }
+
   component Caption: Text {
     textFormat: Text.PlainText
     color: root.dim
@@ -443,6 +524,7 @@ Panel {
             required property string previewText
             required property string detailText
             required property string previewImage
+            required property string fullText
 
             width: ListView.view.width - (ListView.view.ScrollBar.vertical.visible ? Style.space(8) : 0)
             height: root.rowHeight
@@ -452,6 +534,7 @@ Panel {
             currentFill: Style.selectedFillFor(root.foreground, Color.accent)
 
             MouseArea {
+              id: rowMouse
               anchors.fill: parent
               hoverEnabled: true
               cursorShape: Qt.PointingHandCursor
@@ -606,6 +689,16 @@ Panel {
                   fontFamily: root.fontFamily
                 }
               }
+            }
+
+            // The row can only ever show one elided line, so hovering it
+            // opens the whole clip. Suppressed over the remove button, which
+            // carries its own tooltip — otherwise both open at once and the
+            // preview covers the thing you are aiming at.
+            ClipPreview {
+              visible: rowMouse.containsMouse && !removeMouse.containsMouse
+              body: row.fullText
+              image: row.previewImage
             }
           }
 

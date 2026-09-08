@@ -142,6 +142,30 @@ function preview(entry) {
   return value.text.slice(0, 8192).replace(/\s+/g, " ").trim().slice(0, 500)
 }
 
+// The whole clip, for the hover preview. preview() is deliberately lossy —
+// it collapses every newline and cuts at 500 characters so a row stays one
+// line — so the hover needs its own faithful rendering rather than a longer
+// slice of the same thing. Still capped: a clip can be megabytes, and a Text
+// item that large stalls the shell while it lays out. The cap announces
+// itself instead of eliding in silence, so a truncated preview is never
+// mistaken for a short clip.
+var FULL_TEXT_LIMIT = 4000
+
+function fullText(entry, limit) {
+  var value = normalizeEntry(entry)
+  if (!value) return ""
+  if (value.type === "image") {
+    var lines = [value.path, value.mime]
+    if (value.capturedAt) lines.push(value.capturedAt)
+    return lines.join("\n")
+  }
+
+  var maximum = limit === undefined ? FULL_TEXT_LIMIT : Math.max(0, Number(limit) || 0)
+  var text = value.text
+  if (text.length <= maximum) return text
+  return text.slice(0, maximum) + "\n…\n" + text.length + " characters in total"
+}
+
 function searchableText(entry) {
   var value = normalizeEntry(entry)
   if (!value) return ""
@@ -168,6 +192,7 @@ function displayRows(history, query, limit, filter) {
       entryType: entry.type,
       category: kind,
       previewText: preview(entry),
+      fullText: fullText(entry),
       detailText: kind.charAt(0).toUpperCase() + kind.slice(1),
       previewImage: thumbnailPath(entry)
     })
@@ -199,6 +224,7 @@ if (typeof module !== "undefined") {
     nextFilter: nextFilter,
     category: category,
     preview: preview,
+    fullText: fullText,
     searchableText: searchableText,
     displayRows: displayRows,
     removeAt: removeAt

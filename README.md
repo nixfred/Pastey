@@ -14,6 +14,8 @@ anchored directly to its bar icon.
 - Searches all retained text, file paths, and image metadata as you type
 - Filters the list to text only, photos only, or both, from a toggle under
   the search field — the choice sticks while you search and until you change it
+- Shows the whole clip on hover, so a row that has to elide to one line is
+  still readable in full — with the picture itself for a photo
 - Restores an item to the clipboard on click or Enter; it never types into an app
 - Copies the latest visible item with a right-click on the bar icon
 - Removes every visible item with its × button or the Delete key

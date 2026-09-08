@@ -61,6 +61,24 @@ assert.equal(model.displayRows(history, "hello", 200).length, 2)
 assert.equal(model.displayRows(history, "sample.png", 200).length, 1)
 assert.equal(model.displayRows(history, "missing", 200).length, 0)
 
+// fullText is the hover preview's source: faithful where preview() is lossy.
+const multiline = { type: "text", text: "line one\n\n  line three  " }
+assert.equal(model.fullText(multiline), "line one\n\n  line three  ")
+assert.equal(model.preview(multiline), "line one line three")
+assert.equal(model.fullText(image), "/tmp/sample.png\nimage/png\nToday 09:00")
+assert.equal(model.fullText({ type: "image", path: "/tmp/a.png", mime: "image/png" }),
+  "/tmp/a.png\nimage/png")
+// A file clip's copy object IS the file:// text, so it is passed through whole
+// rather than summarised as "2 files" the way the row is.
+assert.equal(model.fullText(files), "file:///tmp/one.txt\nfile:///tmp/two.txt")
+// Over the cap, the truncation announces itself instead of eliding silently.
+const huge = { type: "text", text: "x".repeat(5000) }
+assert.equal(model.fullText(huge), "x".repeat(4000) + "\n…\n5000 characters in total")
+assert.equal(model.fullText({ type: "text", text: "abcdef" }, 3), "abc\n…\n6 characters in total")
+assert.equal(model.fullText({ type: "text", text: "abc" }, 3), "abc")
+assert.equal(model.fullText(null), "")
+assert.equal(model.displayRows([multiline], "", 200)[0].fullText, "line one\n\n  line three  ")
+
 const oversized = Array.from({ length: 205 }, (_, i) => ({ type: "text", text: "clip " + i }))
 assert.equal(model.parseEntries(JSON.stringify(oversized), 200).length, 200)
 assert.equal(model.removeAt(oversized, 0, 200)[0].text, "clip 1")

@@ -1,9 +1,20 @@
+<p align="center">
+  <a href="#install"><img alt="Omarchy plugin" src="https://img.shields.io/badge/Omarchy-bar%20widget-43f2a1?style=flat-square&labelColor=0b141d"></a>
+  <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-efcc45?style=flat-square&labelColor=0b141d"></a>
+  <a href="#what-it-does"><img alt="200 clips" src="https://img.shields.io/badge/history-200%20clips-63c89e?style=flat-square&labelColor=0b141d"></a>
+  <a href="#how-it-shares-omarchys-history"><img alt="No second watcher" src="https://img.shields.io/badge/watchers-zero%20added-7fb3d5?style=flat-square&labelColor=0b141d"></a>
+</p>
+
 # Pastey
 
-Pastey is a compact clipboard-history panel for the Omarchy bar. It uses the
-same popup vocabulary as Omarchy's Bluetooth panel: a small status hero,
-section labels, keyboard cursor surfaces, theme-native colors, and a panel
-anchored directly to its bar icon.
+A clipboard that remembers. Two hundred clips behind a paperclip on the Omarchy
+bar, searchable the moment you start typing, with real thumbnails for the
+screenshots and the whole clip on hover.
+
+Pastey speaks Omarchy's own popup vocabulary — a small status hero, section
+labels, keyboard cursor surfaces, theme-native colour, and a panel anchored
+directly to its bar icon. It looks like the Bluetooth panel because it is built
+out of the same parts.
 
 ## What it does
 
@@ -15,28 +26,34 @@ anchored directly to its bar icon.
 - Filters the list to text only, photos only, or both, from a toggle under
   the search field — the choice sticks while you search and until you change it
 - Shows the whole clip on hover, so a row that has to elide to one line is
-  still readable in full — with the picture itself for a photo
+  still readable in full, newlines intact, with the picture itself for a photo
 - Restores an item to the clipboard on click or Enter; it never types into an app
 - Copies the latest visible item with a right-click on the bar icon
 - Removes every visible item with its × button or the Delete key
-- Uses a paperclip icon and defaults to the right side of the bar
+- Carries its version, source and nixfred.com as one dim line at the foot of the
+  panel, so you never have to open a file to learn which build you are running
 
-Pastey shares Omarchy's built-in clipboard history file rather than launching a
-second `wl-paste` watcher. The built-in `Super+Ctrl+V` clipboard manager remains
-available and sees the same 200-entry history.
+## How it shares Omarchy's history
+
+Pastey reads the clipboard history file Omarchy already maintains rather than
+launching a second `wl-paste` watcher. Nothing new listens to your selections.
+The built-in `Super+Ctrl+V` manager keeps working and sees exactly the same
+entries, so the two are views of one history rather than rival copies of it.
+
+Where the two disagree is length. The stock recorder keeps a deliberately larger
+general-purpose history; Pastey owns the tighter 200-entry contract and trims the
+shared file whenever a capture pushes it past that.
 
 ## Install
 
-From the private GitHub repository (GitHub access required):
-
-```bash
+```sh
 omarchy plugin add https://github.com/nixfred/Pastey.git --enable --yes
 omarchy bar move nixfred.pastey --section right
 ```
 
 From a local checkout:
 
-```bash
+```sh
 omarchy plugin add file:///absolute/path/to/Pastey --enable --yes
 omarchy bar move nixfred.pastey --section right
 ```
@@ -53,11 +70,12 @@ omarchy bar move nixfred.pastey --section right
 ## Requirements
 
 Pastey targets Omarchy 4 and uses the clipboard tooling Omarchy already ships:
-`jq` and `wl-copy`.
+`jq` and `wl-copy`. No additional packages, no service to enable, no state of
+its own.
 
 ## Test
 
-```bash
+```sh
 node tests/model.test.js
 node tests/scroll-policy.test.js
 bash tests/action.test.sh

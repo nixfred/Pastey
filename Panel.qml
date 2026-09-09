@@ -44,6 +44,7 @@ Panel {
   property string filter: "all"
   property int selectedIndex: 0
   property string actionStatus: ""
+  readonly property bool previewAllowed: !previewHold.running && !resultList.moving
 
   ListModel { id: displayModel }
 
@@ -144,7 +145,7 @@ Panel {
     readonly property int maxWidth: Style.space(440)
     readonly property int pad: Style.space(10)
 
-    delay: 320
+    delay: 600
     padding: 0
     // Popup only keeps itself inside the window when margins are >= 0; the
     // default of -1 lets it hang off the screen edge instead.
@@ -282,6 +283,17 @@ Panel {
     interval: 1800
     repeat: false
     onTriggered: root.actionStatus = ""
+  }
+
+  // Scrolling the wheel sets contentY directly and cancels the flick, so the
+  // list never reports itself as `moving` — the rows slide under a pointer
+  // that never left, and every row they slide past reads as a fresh hover.
+  // Wheeling therefore has to say so itself, and the preview stays shut until
+  // the list has been still for a moment. `moving` still covers dragging.
+  Timer {
+    id: previewHold
+    interval: 400
+    repeat: false
   }
 
   BarIconButton {
@@ -544,6 +556,7 @@ Panel {
               // this ListView. Route the wheel from here instead of placing a
               // competing overlay above the Flickable.
               onWheel: function(wheel) {
+                previewHold.restart()
                 wheel.accepted = fastScroll.applyDeltas(
                   wheel.pixelDelta.y, wheel.angleDelta.y)
               }
@@ -696,7 +709,8 @@ Panel {
             // carries its own tooltip — otherwise both open at once and the
             // preview covers the thing you are aiming at.
             ClipPreview {
-              visible: rowMouse.containsMouse && !removeMouse.containsMouse
+              visible: root.previewAllowed && rowMouse.containsMouse
+                && !removeMouse.containsMouse
               body: row.fullText
               image: row.previewImage
             }

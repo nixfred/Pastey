@@ -4,6 +4,7 @@ import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "Model.js" as Model
 
@@ -20,9 +21,9 @@ Panel {
     || Quickshell.env("HOME") + "/.local/state") + "/omarchy"
   readonly property string historyPath: stateDir + "/clipboard-history.json"
   readonly property string pluginDir: String(Qt.resolvedUrl(".")).replace(/^file:\/\//, "")
-  readonly property color foreground: bar ? bar.foreground : Color.foreground
+  readonly property color foreground: bar ? bar.foreground : Commons.Color.foreground
   readonly property color dim: Qt.darker(foreground, 1.5)
-  readonly property color urgent: bar ? bar.urgent : Color.urgent
+  readonly property color urgent: bar ? bar.urgent : Commons.Color.urgent
   readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
 
   // Identity for the About line. The manifest is the single source of truth
@@ -156,9 +157,9 @@ Panel {
     y: (parent ? (parent.height - height) / 2 : 0)
 
     background: BorderSurface {
-      color: Color.tooltip.background
+      color: Commons.Color.tooltip.background
       borderSpec: Border.localOrSurfaceSpec("tooltip", "border",
-        Color.tooltip.border, Color.tooltip.border, Style.normalBorderWidth)
+        Commons.Color.tooltip.border, Commons.Color.tooltip.border, Style.normalBorderWidth)
       radius: Style.cornerRadius
     }
 
@@ -201,7 +202,7 @@ Panel {
           // A clip capped at 4000 characters can still be 4000 lines long.
           maximumLineCount: 20
           elide: Text.ElideRight
-          color: Color.tooltip.text
+          color: Commons.Color.tooltip.text
           font.family: root.fontFamily
           font.pixelSize: Style.font.bodySmall
         }
@@ -388,8 +389,8 @@ Panel {
             width: implicitWidth
             height: implicitHeight
             radius: width / 2
-            color: Style.selectedFillFor(root.foreground, Color.accent)
-            borderSpec: Border.controlSpec("selected", root.foreground, Color.accent)
+            color: Style.selectedFillFor(root.foreground, Commons.Color.accent)
+            borderSpec: Border.controlSpec("selected", root.foreground, Commons.Color.accent)
 
             Text {
               anchors.centerIn: parent
@@ -442,8 +443,8 @@ Panel {
           width: parent.width
           height: Style.space(38)
           radius: Style.cornerRadius
-          color: Style.normalFillFor(root.foreground, Color.accent)
-          borderSpec: Border.controlSpec("normal", root.foreground, Color.accent)
+          color: Style.normalFillFor(root.foreground, Commons.Color.accent)
+          borderSpec: Border.controlSpec("normal", root.foreground, Commons.Color.accent)
 
           Row {
             anchors.fill: parent
@@ -495,7 +496,7 @@ Panel {
           focusable: false
           cursorIndex: -1
           foreground: root.foreground
-          accent: Color.accent
+          accent: Commons.Color.accent
           fontFamily: root.fontFamily
           fontSize: Style.font.caption
           onChanged: function(value) {
@@ -542,8 +543,8 @@ Panel {
             height: root.rowHeight
             hasCursor: index === root.selectedIndex
             foreground: root.foreground
-            fill: Style.hoverFillFor(root.foreground, Color.accent)
-            currentFill: Style.selectedFillFor(root.foreground, Color.accent)
+            fill: Style.hoverFillFor(root.foreground, Commons.Color.accent)
+            currentFill: Style.selectedFillFor(root.foreground, Commons.Color.accent)
 
             MouseArea {
               id: rowMouse
@@ -583,7 +584,7 @@ Panel {
                   anchors.fill: parent
                   visible: !badge.showsThumbnail
                   radius: width / 2
-                  color: Style.selectedFillFor(root.foreground, Color.accent)
+                  color: Style.selectedFillFor(root.foreground, Commons.Color.accent)
                   borderSpec: Border.none()
 
                   Text {
